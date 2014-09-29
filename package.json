@@ -1,6 +1,6 @@
 {
   "name": "phased-hooks",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "register and invoke a system of callbacks in phases",
   "main": "hooks.js",
   "scripts": {
