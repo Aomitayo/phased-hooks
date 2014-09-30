@@ -144,13 +144,37 @@ Hooks.prototype.register = function(phase, name, fn, priority){
 		phase = undefined;
 	}
 	phase = phase || 'main';
+
 	if(phase && ! self._hooks[phase]){
 		throw new Error('Invalid phase requested. Phase should be either \'main\', \'pre\', or \'post\'');
 	}
 
 	debug('register %s %s %s %s', phase, name, fn, priority);
 
-	self._hooks[phase].push({name: name, phase:phase, priority: priority || 0, fn: fn});
+	if(_.isFunction(fn)){
+		self._hooks[phase].push({name: name, phase:phase, priority: priority || 0, fn: fn});
+		return;
+	}
+	else if(_.isArray(fn)){
+		self._hooks[phase] = self._hooks[phase].concat(_.map(fn, function(f){
+			return {name: name, phase:phase, priority: priority || 0, fn: f};
+		}));
+	}
+	else if(_.isPlainObject(fn)){
+		if(fn.pre){
+			self.register('pre', name, fn.pre, priority);
+		}
+		if(fn.post){
+			self.register('post', name, fn.post, priority);
+		}	
+		if(fn.main){
+			self.register(name, fn.main);
+		}
+	}
+	else{
+		var err = new Error('Expected action ' +  + ' to be function, array[function] or {pre:[fn] post:[fn] fn:[fn]}');
+		throw err;
+	}
 };
 
 module.exports = new Hooks();

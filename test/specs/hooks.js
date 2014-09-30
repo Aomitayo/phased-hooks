@@ -155,3 +155,61 @@ _.forEach(['pre', 'post'], function(phase){
 	});
 
 });
+
+describe('Batch hook registration', function(){
+	it('can register an array of hooks', function(done){
+		var spyContext = {};
+		var spies = [];
+		for(var i = 0; i < 4; i++){
+			spies.push(sinon.stub().callsArgWith(2, null, i));
+		}
+
+		hooks.register('array_hook', spies);
+
+		q.ninvoke(hooks, 'execute', 'array_hook', ['arg1', 'arg2'],	spyContext)	
+		.then(function(returnValue){
+			spies.forEach(function(spy, i){
+				expect(spy).to.have.been.calledOn(spyContext);
+				expect(spy).to.have.been.calledOnce;
+				expect(spy.args[0][3]).to.equal(i === 0 ? undefined : i-1);
+			});
+			expect(returnValue).to.equal(3)
+		})
+		.done(function(err){
+			if(err){return done(err);}
+			done();
+		});
+	});
+
+	it('can register an system of hooks defined by an object with pre, post and main properties', function(done){
+		var spyContext = {};
+		var spies = {
+			pre: sinon.stub().callsArgWith(2, null, 'pre'),
+			main: sinon.stub().callsArgWith(2, null, 'main'),
+			post: sinon.stub().callsArgWith(2, null, 'post'),
+		};
+
+		hooks.register('objectdefd_hook', spies);
+
+		q.ninvoke(hooks, 'execute', 'objectdefd_hook', ['arg1', 'arg2'],	spyContext)	
+		.then(function(returnValue){
+			expect(spies.pre).to.have.been.calledOn(spyContext);
+			expect(spies.pre).to.have.been.calledOnce;
+			expect(spies.pre.args[0][3]).to.equal(undefined);
+
+			expect(spies.main).to.have.been.calledOn(spyContext);
+			expect(spies.main).to.have.been.calledOnce;
+			expect(spies.main.args[0][3]).to.equal('pre');
+
+			expect(spies.post).to.have.been.calledOn(spyContext);
+			expect(spies.post).to.have.been.calledOnce;
+			expect(spies.post.args[0][3]).to.equal('main');
+
+			expect(returnValue).to.equal('post');
+		})
+		.done(function(err){
+			if(err){return done(err);}
+			done();
+		});
+	});
+});
